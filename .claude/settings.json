@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/home/kittipat/.platformio/penv/bin/python3 gen_report.py)",
+      "Bash(cd \"/home/kittipat/Workspace/Final Project Network Cyber/Projects\" && find . -iname \"*.py\" -not -path \"*/.pio/*\" -not -path \"*/node_modules/*\" 2>/dev/null)",
+      "Read(//home/kittipat/Workspace/Final Project Network Cyber/Projects/**)"
+    ]
+  }
+}
