@@ -1,9 +1,35 @@
 {
   "permissions": {
     "allow": [
-      "Bash(/home/kittipat/.platformio/penv/bin/python3 gen_report.py)",
-      "Bash(cd \"/home/kittipat/Workspace/Final Project Network Cyber/Projects\" && find . -iname \"*.py\" -not -path \"*/.pio/*\" -not -path \"*/node_modules/*\" 2>/dev/null)",
-      "Read(//home/kittipat/Workspace/Final Project Network Cyber/Projects/**)"
+      "Bash(pio:*)",
+      "Bash(/home/kittipat/.platformio/penv/bin/pio:*)",
+      "Bash(python3:*)",
+      "Bash(lsusb)",
+      "Bash(mosquitto_pub:*)",
+      "Bash(mosquitto_sub:*)",
+      "Bash(systemctl status:*)",
+      "Read(//dev/**)",
+      "Bash(timeout -k 5 100 /home/kittipat/.platformio/penv/bin/python3 \"/tmp/claude-1000/-home-kittipat-Workspace-Final-Project-Network-Cyber-Projects-AEGIS-IDEA3/a57f72bb-0cc2-4301-a935-95c4dbf10716/scratchpad/mqtt_test2.py\")",
+      "Bash(timeout -k 3 15 /home/kittipat/.platformio/penv/bin/python3 -c ' *)",
+      "Bash(python3 -c ' *)",
+      "Bash(./venv/bin/python3 -c \"import pygame; print\\(pygame.__file__\\)\")",
+      "Bash(ldconfig -p)",
+      "Bash(pacman -Q sdl2_mixer)",
+      "Bash(timeout 5 paplay Sound.wav)",
+      "Bash(./venv/bin/python3 -m py_compile server_admin.py)",
+      "Bash(./venv/bin/python3 -c ' *)",
+      "Bash(timeout 6 ./venv/bin/python3 server_admin.py)",
+      "Bash(sudo -n ufw status)",
+      "Bash(sudo -n true)",
+      "Bash(systemctl is-active *)",
+      "Bash(systemctl is-enabled *)",
+      "Read(//var/log/**)",
+      "Bash(git check-ignore *)",
+      "Bash(git add *)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo rm:*)"
     ]
   }
 }
