@@ -15,7 +15,7 @@
 const char* WIFI_SSID     = "Pboo_2.4G";
 const char* WIFI_PASSWORD = "0985932894";
 
-const char* MQTT_BROKER = "192.168.1.167";
+const char* MQTT_BROKER = "192.168.2.174";
 const int   MQTT_PORT   = 1883;
 
 const char* HMAC_SECRET = "AEGIS-DEMO-SHARED-SECRET-change-me";
@@ -28,8 +28,8 @@ const char* TOPIC_STATUS    = "aegis/status";
 
 // ========== Hardware ==========
 const int RELAY_IN  = 27;
-const int LED_GREEN = 17;
-const int LED_RED   = 16;
+const int LED_GREEN = 32;
+const int LED_RED   = 33;
 const int RELAY_RELEASE = HIGH;
 const int RELAY_TRIGGER = LOW;
 
@@ -37,6 +37,9 @@ const int RELAY_TRIGGER = LOW;
 const unsigned long DEADMAN_TIMEOUT_MS = 60000;
 const int NONCE_HISTORY_SIZE = 20;
 const int MAX_COMMAND_AGE_SEC = 30;
+
+// ========== LED Blink (ไฟแดงกระพริบตอน Lockdown) ==========
+const unsigned long LED_BLINK_INTERVAL_MS = 300;
 
 // ========== State ==========
 WiFiClient wifiClient;
@@ -46,6 +49,8 @@ unsigned long lastHeartbeatMs = 0;
 bool deadmanTriggered = false;
 String usedNonces[NONCE_HISTORY_SIZE];
 int nonceIndex = 0;
+unsigned long lastBlinkMs = 0;
+bool ledRedBlinkState = false;
 
 // ========== ฟังก์ชันประกาศล่วงหน้า ==========
 String computeHMAC(const String& m, const char* key);
@@ -59,6 +64,7 @@ void connectWiFi();
 void syncTimeNTP();
 void connectMQTT();
 void checkDeadman();
+void updateLedBlink();
 
 String computeHMAC(const String& m, const char* key) {
   byte r[32];
@@ -93,11 +99,19 @@ void publishStatus(const String& state, const String& reason) {
   mqtt.publish(TOPIC_STATUS, out.c_str());
 }
 
+
 void setLockdown(bool lock, const String& reason) {
   isLockedDown = lock;
   digitalWrite(RELAY_IN, lock ? RELAY_TRIGGER : RELAY_RELEASE);
   digitalWrite(LED_GREEN, lock ? LOW : HIGH);
-  digitalWrite(LED_RED,   lock ? HIGH : LOW);
+  if (lock) {
+    // เริ่มกระพริบไฟแดงทันที (สถานะกระพริบคุมต่อใน updateLedBlink() ผ่าน loop())
+    ledRedBlinkState = true;
+    digitalWrite(LED_RED, HIGH);
+    lastBlinkMs = millis();
+  } else {
+    digitalWrite(LED_RED, LOW);
+  }
   Serial.println();
   if (lock) {
     Serial.println("################################################");
@@ -242,6 +256,16 @@ void checkDeadman() {
   }
 }
 
+void updateLedBlink() {
+  if (!isLockedDown) return;  // ปกติไฟแดงดับนิ่ง ไม่ต้องกระพริบ
+  unsigned long now = millis();
+  if (now - lastBlinkMs >= LED_BLINK_INTERVAL_MS) {
+    lastBlinkMs = now;
+    ledRedBlinkState = !ledRedBlinkState;
+    digitalWrite(LED_RED, ledRedBlinkState ? HIGH : LOW);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -272,5 +296,6 @@ void loop() {
   if (!mqtt.connected()) connectMQTT();
   mqtt.loop();
   checkDeadman();
+  updateLedBlink();
   delay(10);
 }

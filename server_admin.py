@@ -17,7 +17,7 @@ from tkinter import scrolledtext, simpledialog, messagebox, ttk
 # ==========================================
 # 1. CONFIGURATION & DATABASE SETUP
 # ==========================================
-BROKER_IP = "192.168.1.167"
+BROKER_IP = "192.168.2.174"
 PORT = 1883
 SECRET_KEY = b"AEGIS-DEMO-SHARED-SECRET-change-me"
 ADMIN_PIN = "1234"  # รหัสผ่านสำหรับปลดล็อกกดปุ่ม
@@ -30,6 +30,7 @@ TOPIC_CMD = "aegis/lockdown/cmd"
 TOPIC_ACK = "aegis/lockdown/ack"
 TOPIC_HEARTBEAT = "aegis/heartbeat"
 TOPIC_STATUS = "aegis/status"
+TOPIC_ATTACKER_IP = "aegis/attacker_ip"  # IP ผู้บุกรุก (จากแอดมินกรอกเอง หรือจาก Auto-Detector) แนบเข้า Telegram ตอน LOCKDOWN
 
 HEARTBEAT_INTERVAL_SEC = 15
 DEADMAN_TIMEOUT_SEC = 60  # ต้องตรงกับ DEADMAN_TIMEOUT_MS ใน src/main.cpp
@@ -58,11 +59,12 @@ def log_to_db(event_type, details):
         conn.close()
     except Exception as e:
         print(f"DB Error: {e}")
+    send_ops_alert(event_type, details)
 
 # ==========================================
 # 2. SECURITY & TELEGRAM NOTIFICATION MODULE
 # ==========================================
-def send_webhook_alert(state, reason, rssi=None, heap=None):
+def send_webhook_alert(state, reason, rssi=None, heap=None, attacker_ip=None):
     """ส่งแจ้งเตือนเข้า Telegram แบบสองภาษา (ไทย/English) รูปแบบมืออาชีพ"""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return
@@ -83,6 +85,8 @@ def send_webhook_alert(state, reason, rssi=None, heap=None):
         ]
         if rssi is not None and heap is not None:
             lines.append(f"📶 RSSI: `{rssi} dBm`   💾 Heap: `{heap} B`")
+        if is_lockdown and attacker_ip:
+            lines.append(f"🎯 *Attacker IP:* `{attacker_ip}`")
         lines.append("")
         if is_lockdown:
             lines.append("⚠️ *EN:* Physical uplink has been cut. Admin action is required via the Management VLAN.")
@@ -102,6 +106,46 @@ def send_webhook_alert(state, reason, rssi=None, heap=None):
         urllib.request.urlopen(req, timeout=3)
     except Exception as e:
         print(f"Telegram Webhook error: {e}")
+
+
+OPS_ALERT_LABELS = {
+    "SECURITY_ALERT": ("🚨 SECURITY ALERT", "แจ้งเตือนความปลอดภัย (พยายามใช้งานโดยไม่ได้รับอนุญาต)"),
+    "UFW_BLOCK": ("🧱 UFW CONTAINMENT", "การบล็อก IP ด้วย UFW"),
+    "RECOVERY_STEP": ("🧯 RECOVERY PROGRESS", "ความคืบหน้าการกู้คืนระบบ"),
+    "INCIDENT_CLOSED": ("✅ INCIDENT CLOSED", "ปิดเหตุการณ์ (บันทึกบทเรียนแล้ว)"),
+}
+
+def send_ops_alert(event_type, details):
+    """ส่งเหตุการณ์สำคัญ (นอกเหนือจาก LOCKDOWN/RESTORED) เข้า Telegram ให้แอดมิน
+    เห็นได้แม้ไม่ได้อยู่หน้าห้อง server — เก็บลง SQLite เหมือนเดิมควบคู่กัน ไม่แทนที่กัน"""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    if event_type not in OPS_ALERT_LABELS:
+        return
+
+    def _send():
+        try:
+            title_en, title_th = OPS_ALERT_LABELS[event_type]
+            ts_str = time.strftime('%d %b %Y, %H:%M:%S')
+            text = (
+                f"🛡️ *AEGIS IDEA 3 — SOC*\n"
+                f"{title_en}\n"
+                f"_{title_th}_\n\n"
+                f"`{details}`\n\n"
+                f"🕐 {ts_str}"
+            )
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            payload = json.dumps({
+                "chat_id": TELEGRAM_CHAT_ID,
+                "text": text,
+                "parse_mode": "Markdown"
+            }).encode('utf-8')
+            req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+            urllib.request.urlopen(req, timeout=3)
+        except Exception as e:
+            print(f"Telegram Ops Alert error: {e}")
+
+    threading.Thread(target=_send, daemon=True).start()
 
 # ==========================================
 # 2B. UFW CONTAINMENT (ตามเอกสารข้อ 5.2 ขั้น 3 — ตัดวงจรกายภาพคู่กับบล็อกซอฟต์แวร์)
@@ -153,44 +197,55 @@ class MQTTManager:
         self.is_connected = False
         self.log_callback = log_callback
         self.status_callback = status_callback
+        self.last_attacker_ip = None
         self.client.on_message = self.on_message
 
     def on_message(self, client, userdata, msg):
         try:
             payload_str = msg.payload.decode('utf-8')
             timestamp_str = time.strftime('%H:%M:%S')
-            
+
             if msg.topic == TOPIC_ACK:
                 data = json.loads(payload_str)
                 log_msg = f"[{timestamp_str}] [ACK] สถานะ: {data.get('ack')} | ดีเทล: {data.get('detail')}"
                 if self.log_callback:
                     self.log_callback(log_msg)
                 log_to_db("ACK_RECEIVED", f"{data.get('ack')} - {data.get('detail')}")
-                
+
+            elif msg.topic == TOPIC_ATTACKER_IP:
+                ip = payload_str.strip()
+                if ip:
+                    self.last_attacker_ip = ip
+                    if self.log_callback:
+                        self.log_callback(f"[{timestamp_str}] [DETECTOR] พบ IP ต้องสงสัย: {ip}")
+
             elif msg.topic == TOPIC_STATUS:
                 data = json.loads(payload_str)
                 state = data.get("state", "NORMAL")
                 reason = data.get("reason", "")
                 rssi = data.get("rssi", 0)
                 heap = data.get("heap", 0)
-                
+
                 log_msg = f"[{timestamp_str}] [STATUS] State: {state} | Reason: {reason} | RSSI: {rssi}dBm | Heap: {heap}B"
                 if self.log_callback:
                     self.log_callback(log_msg)
                 if self.status_callback:
                     self.status_callback(state, rssi, heap)
-                
+
                 log_to_db("DEVICE_STATUS", f"{state} ({reason})")
-                
+
                 if state in ("LOCKDOWN", "NORMAL"):
-                    send_webhook_alert(state, reason, rssi, heap)
+                    attacker_ip = self.last_attacker_ip if state == "LOCKDOWN" else None
+                    send_webhook_alert(state, reason, rssi, heap, attacker_ip=attacker_ip)
+                    if state == "LOCKDOWN":
+                        self.last_attacker_ip = None  # ใช้ครั้งเดียวต่อเหตุการณ์ ไม่ให้ค้างไปโผล่ครั้งหน้า
         except Exception as e:
             print(f"Error parsing message: {e}")
 
     def start(self):
         try:
             self.client.connect(self.broker, self.port, 60)
-            self.client.subscribe([(TOPIC_ACK, 0), (TOPIC_STATUS, 0)])
+            self.client.subscribe([(TOPIC_ACK, 0), (TOPIC_STATUS, 0), (TOPIC_ATTACKER_IP, 0)])
             self.client.loop_start()
             self.is_connected = True
             log_to_db("SYSTEM", "MQTT Connected successfully")
@@ -520,9 +575,10 @@ class AegisAdminGUI:
     def verify_pin_and_execute(self, action_value, desc):
         entered_pin = simpledialog.askstring("Admin Authentication", "กรุณาใส่ Admin PIN (ค่าเริ่มต้น: 1234):", show='*')
         if entered_pin == ADMIN_PIN:
-            self.send_command(action_value, desc)
             if action_value == "CUT_UPLINK":
+                # ถาม IP ก่อนส่งคำสั่ง เพื่อให้ทันแนบเข้า Telegram ตอน LOCKDOWN status กลับมา
                 self.prompt_block_attacker_ip()
+            self.send_command(action_value, desc)
         elif entered_pin is not None:
             messagebox.showerror("Access Denied", "รหัส PIN ไม่ถูกต้อง! ปฏิเสธการออกคำสั่ง")
             log_to_db("SECURITY_ALERT", "Unauthorized button click attempt (Wrong PIN)")
@@ -542,14 +598,17 @@ class AegisAdminGUI:
         threading.Thread(target=worker, daemon=True).start()
 
     def prompt_block_attacker_ip(self):
-        """ถาม IP ผู้บุกรุก (เว้นว่างได้) แล้วสั่ง UFW บล็อกคู่กับการตัด relay ตามเอกสารข้อ 5.2 ขั้น 3"""
+        """ถาม IP ผู้บุกรุก (เว้นว่างได้) — เก็บไว้แนบใน Telegram ตอน LOCKDOWN
+        และสั่ง UFW บล็อกคู่กับการตัด relay ตามเอกสารข้อ 5.2 ขั้น 3"""
         ip = simpledialog.askstring(
             "UFW Containment",
-            "ระบุ IP ผู้บุกรุกที่ต้องการบล็อกด้วย UFW คู่กับการตัดวงจร (เว้นว่าง = ข้ามขั้นตอนนี้):"
+            "ระบุ IP ผู้บุกรุก (จะแนบใน Telegram + บล็อกด้วย UFW คู่กับการตัดวงจร, เว้นว่าง = ข้าม):"
         )
         if not ip or not ip.strip():
+            self.mqtt.last_attacker_ip = None
             return
         ip = ip.strip()
+        self.mqtt.last_attacker_ip = ip
         t_str = time.strftime('%H:%M:%S')
         self.log_message(f"[{t_str}] [UFW] กำลังขอสิทธิ์ผู้ดูแลระบบเพื่อบล็อก {ip} ...")
 

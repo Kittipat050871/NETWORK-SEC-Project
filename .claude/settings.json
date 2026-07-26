@@ -25,7 +25,12 @@
       "Bash(systemctl is-enabled *)",
       "Read(//var/log/**)",
       "Bash(git check-ignore *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s https://api.github.com/repos/Kittipat050871/NETWORK-SEC-Project)",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "Read(//home/kittipat/**)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
