@@ -96,3 +96,13 @@ def ufw_exec(args, timeout=30):
         return False, "หมดเวลารอการยืนยันตัวตน (ไม่กดยืนยัน popup ทันเวลา)"
     except Exception as e:
         return False, str(e)
+
+
+def send_telegram_reply(text):
+    """ส่งข้อความกลับไป Telegram (ใช้ตอบคำสั่งสองทาง)"""
+    if not config.TELEGRAM_BOT_TOKEN or not config.TELEGRAM_CHAT_ID:
+        return
+    try:
+        _post_telegram(text)
+    except Exception as e:
+        print(f"[TG] ตอบกลับไม่สำเร็จ: {e}")

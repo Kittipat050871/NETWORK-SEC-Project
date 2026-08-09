@@ -5,8 +5,29 @@ AEGIS IDEA 3 — Configuration
 import os
 import hashlib
 
+
+def _load_dotenv(path=".env"):
+    """โหลดค่าจากไฟล์ .env เข้า environment ก่อนอ่านค่าทั้งหมด"""
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except Exception as e:
+        print(f"[.env] อ่านไฟล์ไม่สำเร็จ: {e}")
+
+
+_load_dotenv()      # ← บรรทัดนี้สำคัญสุด: เรียกใช้ก่อนอ่านค่า
+
 # ---- MQTT Broker ----
-# ยังชี้ LAN เดฟก่อน (ยังไม่ต่อ topology จริง/VLAN 10) — ตอนขึ้นจริงค่อย export AEGIS_BROKER_IP
 BROKER_IP = os.getenv("AEGIS_BROKER_IP", "192.168.2.174")
 PORT = int(os.getenv("AEGIS_BROKER_PORT", "1883"))
 

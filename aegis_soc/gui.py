@@ -36,6 +36,8 @@ class AegisAdminGUI:
     def __init__(self, root, mqtt_manager):
         self.root = root
         self.mqtt = mqtt_manager
+        self.tg_pin_fails = 0          # จำนวนครั้งใส่ PIN ผิดทาง Telegram
+        self.tg_locked_until = 0       # ล็อกจนถึงเวลาไหน (timestamp)
 
         # ---- operational state ----
         self.armed = True                 # ARMED = เฝ้าระวังปกติ, DISARMED = โหมดซ่อมบำรุง
@@ -519,6 +521,83 @@ class AegisAdminGUI:
         except ValueError:
             return False
 
+
+
+
+
+    def handle_telegram_command(self, text):
+        """สมองของ Telegram สองทาง: รับข้อความ → แยกคำสั่ง → ทำ
+        ⚠️ ถูกเรียกจาก thread ของ Telegram จึงต้องเด้งกลับ main thread ด้วย root.after"""
+        self.root.after(0, self._process_tg_command, text)
+
+    def _process_tg_command(self, text):
+        parts = text.split()
+        if not parts:
+            return
+        cmd = parts[0].lower()
+
+        if cmd in ("/status", "/hello", "/help"):
+            state = "🔴 LOCKDOWN" if "LOCK" in self.lbl_uplink.cget("text") else "🟢 NORMAL"
+            mode = "ARMED" if self.armed else "DISARMED"
+            comms.send_telegram_reply(
+                f"🛡️ AEGIS สถานะปัจจุบัน\n"
+                f"Uplink: {state}\n"
+                f"โหมด: {mode}\n\n"
+                f"คำสั่ง:\n/status - ดูสถานะ\n/cut <PIN> - ตัดเน็ต\n/restore <PIN> - คืนค่า"
+            )
+            self.log_message(f"[{time.strftime('%H:%M:%S')}] [TG] ตอบคำสั่ง {cmd}", db.INFO)
+
+        elif cmd == "/cut":
+            if not self._tg_check_pin(parts):
+                return
+            if not self.armed:
+                comms.send_telegram_reply("⚠️ ระบบอยู่โหมด DISARMED — สลับเป็น ARMED ก่อน")
+                return
+            self.send_command("CUT_UPLINK", "ตัดเน็ต (สั่งผ่าน Telegram)", critical=True)
+            comms.send_telegram_reply("🔴 ส่งคำสั่งตัด Uplink แล้ว — รอ ACK จากบอร์ด")
+            self.log_message(f"[{time.strftime('%H:%M:%S')}] [TG] สั่งตัดเน็ตผ่าน Telegram", db.CRITICAL)
+
+        elif cmd == "/restore":
+            if not self._tg_check_pin(parts):
+                return
+            self.send_command("RESTORE_UPLINK", "คืนค่า (สั่งผ่าน Telegram)")
+            comms.send_telegram_reply("🟢 ส่งคำสั่งคืนค่า Uplink แล้ว — รอ ACK จากบอร์ด")
+            self.log_message(f"[{time.strftime('%H:%M:%S')}] [TG] สั่งคืนค่าผ่าน Telegram", db.INFO)
+        
+        else:
+            comms.send_telegram_reply(f"❓ ไม่รู้จักคำสั่ง: {text}\nพิมพ์ /status ดูคำสั่งทั้งหมด")
+
+    def _tg_check_pin(self, parts):
+        """เช็ก PIN จาก Telegram + ล็อกถ้าเดาผิดหลายครั้ง"""
+        # ด่านล็อก: ถ้ายังอยู่ในช่วงถูกล็อก ปฏิเสธทันที
+        now = time.time()
+        if now < self.tg_locked_until:
+            wait = int(self.tg_locked_until - now)
+            comms.send_telegram_reply(f"🔒 ถูกล็อกชั่วคราว รออีก {wait} วินาที")
+            return False
+        
+        """เช็ก PIN ที่แนบมากับคำสั่ง Telegram เช่น /cut 1234"""
+        if len(parts) < 2:
+            comms.send_telegram_reply("🔒 ต้องใส่ PIN ด้วย เช่น /cut 1234")
+            return False
+        
+        if not config.verify_pin(parts[1]):
+            self.tg_pin_fails += 1
+            remaining = config.MAX_PIN_ATTEMPTS - self.tg_pin_fails
+            db.log_event("SECURITY_ALERT", f"Wrong PIN via Telegram ({self.tg_pin_fails})", db.WARN)
+            if self.tg_pin_fails >= config.MAX_PIN_ATTEMPTS:
+                self.tg_locked_until = now + 60          # ล็อก 60 วิ
+                self.tg_pin_fails = 0
+                comms.send_telegram_reply("🔒 ใส่ PIN ผิดหลายครั้ง — ล็อก 60 วินาที")
+                self.log_message(f"[{time.strftime('%H:%M:%S')}] [TG] ล็อก Telegram (เดา PIN)", db.CRITICAL)
+            else:
+                comms.send_telegram_reply(f"❌ PIN ไม่ถูกต้อง (เหลืออีก {remaining} ครั้ง)")
+            return False
+
+        # PIN ถูก → รีเซ็ตตัวนับ
+        self.tg_pin_fails = 0
+        return True
+
     # =========================================================
     # MISC
     # =========================================================
@@ -585,4 +664,10 @@ def main():
     mqtt.connection_callback = lambda ok: root.after(0, app.set_broker_state, ok)
     mqtt.ack_callback = lambda a, d: root.after(0, app.on_ack, a, d)
     mqtt.start()
+
+    # เพิ่ม 3 บรรทัดนี้: เริ่มตัวฟังคำสั่ง Telegram
+    from .telegram_control import TelegramListener
+    tg = TelegramListener(on_command=app.handle_telegram_command)
+    tg.start()
+
     root.mainloop()

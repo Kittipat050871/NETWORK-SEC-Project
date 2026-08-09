@@ -92,3 +92,54 @@ This incident has been reported.
 2026-08-09 22:24:02,796 | INFO     | [SYSTEM] SOC GUI shutting down
 2026-08-09 22:25:10,044 | INFO     | [SYSTEM] MQTT connected
 2026-08-09 22:25:53,285 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 23:12:59,328 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 23:13:14,512 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 23:13:14,662 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 23:13:18,367 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 23:13:37,323 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 23:13:37,497 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 23:13:38,681 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 23:13:48,432 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 23:13:48,554 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 23:13:49,632 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 23:15:49,920 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 23:15:49,987 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 23:15:50,953 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 23:15:58,750 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 23:17:10,739 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 23:17:26,346 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 23:17:26,458 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 23:17:30,190 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 23:17:41,565 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 23:17:41,763 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 23:17:42,927 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 23:24:16,223 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 23:25:54,520 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 23:30:38,170 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 23:30:41,579 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 23:31:02,873 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 23:31:02,940 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 23:31:04,032 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 23:31:35,607 | WARNING  | [SECURITY_ALERT] Wrong PIN via Telegram
+2026-08-09 23:31:51,790 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดเน็ต (สั่งผ่าน Telegram)
+2026-08-09 23:31:52,926 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 23:31:53,997 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 23:32:11,456 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่า (สั่งผ่าน Telegram)
+2026-08-09 23:32:12,615 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 23:32:13,757 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 23:37:37,442 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 23:38:34,842 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 23:38:49,939 | INFO     | [DEVICE_STATUS] NORMAL (Heartbeat ยืนยันตัวตนสำเร็จ กลับมาแล้ว)
+2026-08-09 23:39:56,429 | WARNING  | [SECURITY_ALERT] Wrong PIN via Telegram (1)
+2026-08-09 23:40:09,789 | WARNING  | [SECURITY_ALERT] Wrong PIN via Telegram (2)
+2026-08-09 23:40:20,112 | WARNING  | [SECURITY_ALERT] Wrong PIN via Telegram (3)
+2026-08-09 23:40:40,800 | WARNING  | [SECURITY_ALERT] Wrong PIN via Telegram (4)
+2026-08-09 23:40:57,389 | WARNING  | [SECURITY_ALERT] Wrong PIN via Telegram (5)
+2026-08-09 23:42:40,026 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดเน็ต (สั่งผ่าน Telegram)
+2026-08-09 23:42:41,128 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 23:42:42,240 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 23:43:28,830 | WARNING  | [SECURITY_ALERT] Wrong PIN attempt (1/5)
+2026-08-09 23:43:34,426 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 23:43:34,510 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 23:43:35,565 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 23:50:17,141 | INFO     | [SYSTEM] SOC GUI shutting down
