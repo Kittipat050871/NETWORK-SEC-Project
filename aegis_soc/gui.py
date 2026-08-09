@@ -9,6 +9,7 @@ import csv
 import os
 import subprocess
 import tkinter as tk
+import ipaddress
 from tkinter import scrolledtext, simpledialog, messagebox
 
 from . import config
@@ -288,7 +289,7 @@ class AegisAdminGUI:
         if connected:
             self.lbl_conn.config(text="🟢 broker เชื่อมต่อ", fg=COLOR_SUCCESS_HL)
         else:
-            self.lbl_conn.config(text="🔴 broker หลุด", fg=COLOR_DANGER_HL)
+            self.lbl_conn.config(text="🔴 broker หลุด · กำลังต่อใหม่…", fg=COLOR_DANGER_HL)
 
     def on_status(self, state, rssi, heap):
         if state == "LOCKDOWN":
@@ -475,14 +476,27 @@ class AegisAdminGUI:
         threading.Thread(target=worker, daemon=True).start()
 
     def prompt_block_attacker_ip(self):
-        ip = simpledialog.askstring("UFW Containment",
-                                    "ระบุ IP ผู้บุกรุก (แนบ Telegram + บล็อก UFW, เว้นว่าง = ข้าม):")
-        if not ip or not ip.strip():
-            self.mqtt.last_attacker_ip = None
-            return
-        ip = ip.strip()
+        # ถ้า detector ส่ง IP มาแล้ว → ใช้เลย ไม่ต้องถาม
+        auto_ip = self.mqtt.last_attacker_ip
+        if auto_ip and self._is_valid_ip(auto_ip):
+            ip = auto_ip
+            self.log_message(f"[{time.strftime('%H:%M:%S')}] [AUTO] ใช้ IP จาก detector: {ip}", db.WARN)
+        else:
+            # ไม่มี IP อัตโนมัติ → ค่อยถาม (เผื่อกรอกเอง/เว้นว่างข้าม)
+            ip = simpledialog.askstring("UFW Containment",
+                                        "ระบุ IP ผู้บุกรุก (เว้นว่าง = ข้าม):")
+            if not ip or not ip.strip():
+                self.mqtt.last_attacker_ip = None
+                return
+            ip = ip.strip()
+            if not self._is_valid_ip(ip):
+                messagebox.showerror("IP ไม่ถูกต้อง", f"'{ip}' ไม่ใช่ IP ที่ถูกต้อง")
+                self.mqtt.last_attacker_ip = None
+                return
+
+        # จากตรงนี้ลงไป: มี ip ที่ถูกต้องแล้ว (ไม่ว่าจาก auto หรือกรอกเอง)
         self.mqtt.last_attacker_ip = ip
-        db.create_incident(ip)  # เปิด/ผูกเหตุการณ์ทันที
+        db.create_incident(ip)
         self.refresh_incident_banner()
         t = time.strftime('%H:%M:%S')
         self.log_message(f"[{t}] [UFW] กำลังขอสิทธิ์เพื่อบล็อก {ip} ...", db.WARN)
@@ -497,6 +511,13 @@ class AegisAdminGUI:
                 db.log_event("UFW_BLOCK", f"deny from {ip} - failed: {out}", db.WARN)
 
         self.run_ufw_async(["deny", "from", ip], on_done)
+    def _is_valid_ip(self, ip):
+        """เช็กว่าเป็น IP address ที่ถูกต้องไหม (คืน True/False)"""
+        try:
+            ipaddress.ip_address(ip)
+            return True
+        except ValueError:
+            return False
 
     # =========================================================
     # MISC
@@ -531,9 +552,12 @@ class AegisAdminGUI:
     def _start_background_heartbeat(self):
         def worker():
             while True:
-                payload, _ = security.create_secure_payload("alive", "hb")
-                if self.mqtt.publish(config.TOPIC_HEARTBEAT, payload):
-                    self.last_heartbeat_sent_ts = time.time()
+                try:
+                    payload, _ = security.create_secure_payload("alive", "hb")
+                    if self.mqtt.publish(config.TOPIC_HEARTBEAT, payload):
+                        self.last_heartbeat_sent_ts = time.time()
+                except Exception as e:
+                    print(f"[heartbeat] send failed, thread alive: {e}")
                 time.sleep(config.HEARTBEAT_INTERVAL_SEC)
         threading.Thread(target=worker, daemon=True).start()
 

@@ -15,3 +15,80 @@ This incident has been reported.
 2026-08-09 00:56:24,615 | WARNING  | [MODE_CHANGE] System DISARMED (maintenance)
 2026-08-09 00:56:39,466 | INFO     | [MODE_CHANGE] System ARMED
 2026-08-09 01:05:28,240 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 17:40:17,642 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 17:40:38,639 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 17:40:38,783 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 17:40:38,837 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 17:40:56,593 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 17:40:56,713 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 17:40:56,770 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 17:41:19,417 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 17:41:19,552 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 17:41:19,610 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 17:44:37,557 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 17:44:42,793 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 17:47:09,652 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 17:47:12,930 | INFO     | [DEVICE_STATUS] NORMAL (Heartbeat ยืนยันตัวตนสำเร็จ กลับมาแล้ว)
+2026-08-09 17:54:24,779 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 17:55:31,221 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 18:01:51,301 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 18:10:19,080 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 18:11:23,919 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 18:13:42,739 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 18:19:34,097 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 18:20:37,074 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 18:21:20,239 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 18:26:51,091 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 18:28:25,290 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 20:32:20,015 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 20:36:40,257 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 20:39:25,942 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 20:39:41,061 | INFO     | [DEVICE_STATUS] NORMAL (Heartbeat ยืนยันตัวตนสำเร็จ กลับมาแล้ว)
+2026-08-09 20:41:31,318 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 20:41:31,742 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 20:41:31,793 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 20:49:27,196 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 20:50:45,441 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 20:51:09,260 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 20:51:09,407 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 20:51:09,460 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 20:51:47,442 | WARNING  | [SECURITY_ALERT] Wrong PIN attempt (1/5)
+2026-08-09 20:51:54,395 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 20:51:54,478 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 20:51:54,532 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 21:53:39,408 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 21:54:41,838 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 21:55:27,459 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 21:55:27,599 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 21:55:27,652 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 21:55:39,079 | WARNING  | [UFW_BLOCK] deny from 203.0.113.99 - success
+2026-08-09 21:55:56,129 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 21:55:56,254 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 21:55:56,321 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 21:56:23,020 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 21:56:23,100 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 21:56:23,150 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 21:56:31,169 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 21:56:31,282 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 21:56:31,293 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 22:06:09,457 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 22:09:37,758 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 22:10:11,134 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 22:10:11,303 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 22:10:11,351 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 22:10:15,140 | WARNING  | [UFW_BLOCK] deny from 203.0.113.99 - success
+2026-08-09 22:10:29,387 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 22:10:29,515 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 22:10:29,569 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 22:13:40,704 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 22:13:45,271 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 22:13:59,267 | INFO     | [DEVICE_STATUS] ONLINE (Boot completed)
+2026-08-09 22:14:33,603 | CRITICAL | [COMMAND_SENT] CUT_UPLINK - ตัดการเชื่อมต่อเครือข่าย
+2026-08-09 22:14:33,734 | CRITICAL | [DEVICE_STATUS] LOCKDOWN (verified)
+2026-08-09 22:14:33,787 | INFO     | [ACK_RECEIVED] OK - uplink cut
+2026-08-09 22:14:43,409 | INFO     | [COMMAND_SENT] RESTORE_UPLINK - คืนค่าระบบเครือข่ายปกติ
+2026-08-09 22:14:43,667 | INFO     | [DEVICE_STATUS] NORMAL (verified)
+2026-08-09 22:14:43,679 | INFO     | [ACK_RECEIVED] OK - uplink restored
+2026-08-09 22:24:02,796 | INFO     | [SYSTEM] SOC GUI shutting down
+2026-08-09 22:25:10,044 | INFO     | [SYSTEM] MQTT connected
+2026-08-09 22:25:53,285 | INFO     | [SYSTEM] SOC GUI shutting down

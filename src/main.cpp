@@ -41,6 +41,9 @@ const int MAX_COMMAND_AGE_SEC = 30;
 // ========== LED Blink (ไฟแดงกระพริบตอน Lockdown) ==========
 const unsigned long LED_BLINK_INTERVAL_MS = 300;
 
+unsigned long lastReconnectAttempt = 0;
+const unsigned long RECONNECT_INTERVAL_MS = 5000;
+
 // ========== State ==========
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -230,21 +233,22 @@ void syncTimeNTP() {
 }
 
 void connectMQTT() {
-  while (!mqtt.connected()) {
-    Serial.print("เชื่อมต่อ MQTT broker...");
-    String clientId = "AEGIS-ESP32-" + String(random(0xffff), HEX);
-    if (mqtt.connect(clientId.c_str())) {
-      Serial.println(" สำเร็จ!");
-      mqtt.subscribe(TOPIC_COMMAND);
-      mqtt.subscribe(TOPIC_HEARTBEAT);
-      Serial.print("  subscribe: "); Serial.println(TOPIC_COMMAND);
-      Serial.print("  subscribe: "); Serial.println(TOPIC_HEARTBEAT);
-      publishStatus("ONLINE", "Boot completed");
-    } else {
-      Serial.print(" fail rc="); Serial.print(mqtt.state());
-      Serial.println(" ลองใหม่ 5 วิ...");
-      delay(5000);
-    }
+  // ลองต่อใหม่แค่ทุก 5 วิ ไม่วนติดแหง็ก
+  if (millis() - lastReconnectAttempt < RECONNECT_INTERVAL_MS) return;
+  lastReconnectAttempt = millis();
+
+  Serial.print("เชื่อมต่อ MQTT broker...");
+  String clientId = "AEGIS-ESP32-" + String(random(0xffff), HEX);
+  if (mqtt.connect(clientId.c_str())) {
+    Serial.println(" สำเร็จ!");
+    mqtt.subscribe(TOPIC_COMMAND);
+    mqtt.subscribe(TOPIC_HEARTBEAT);
+    Serial.print("  subscribe: "); Serial.println(TOPIC_COMMAND);
+    Serial.print("  subscribe: "); Serial.println(TOPIC_HEARTBEAT);
+    publishStatus("ONLINE", "Boot completed");
+  } else {
+    Serial.print(" fail rc="); Serial.print(mqtt.state());
+    Serial.println(" จะลองใหม่ใน 5 วิ");
   }
 }
 

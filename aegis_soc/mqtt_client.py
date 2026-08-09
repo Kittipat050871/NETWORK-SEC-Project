@@ -42,6 +42,7 @@ class MQTTManager:
             self.connection_callback(True)
 
     def _on_disconnect(self, client, userdata, *args):
+        print(">>> DISCONNECTED")   # เพิ่มบรรทัดนี้ชั่วคราว
         self.is_connected = False
         if self.connection_callback:
             self.connection_callback(False)
@@ -114,7 +115,7 @@ class MQTTManager:
     # ---------- lifecycle ----------
     def start(self):
         try:
-            self.client.connect_async(config.BROKER_IP, config.PORT, 60)
+            self.client.connect_async(config.BROKER_IP, config.PORT, 10)
             self.client.loop_start()
         except Exception as e:
             print(f"[MQTT] start error: {e}")
