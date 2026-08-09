@@ -2,6 +2,9 @@
 .env
 *.env
 
+# ---- ความลับฝั่ง ESP32 ----
+src/secrets.h
+
 # ---- ไฟล์ที่สร้างใหม่ได้ตอนรัน ----
 aegis_audit.db
 aegis_soc.log

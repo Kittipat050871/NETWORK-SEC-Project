@@ -10,15 +10,15 @@
 #include <mbedtls/md.h>
 #include <ArduinoJson.h>
 #include <time.h>
-
+#include "secrets.h"
 // ========== ตั้งค่า ==========
-const char* WIFI_SSID     = "iPhone Music";
-const char* WIFI_PASSWORD = "Mew050871";
+const char* WIFI_SSID     = SECRET_WIFI_SSID;
+const char* WIFI_PASSWORD = SECRET_WIFI_PASSWORD;
+const char* HMAC_SECRET   = SECRET_HMAC_KEY;
 
 const char* MQTT_BROKER = "172.20.10.2";
 const int   MQTT_PORT   = 1883;
 
-const char* HMAC_SECRET = "AEGIS-DEMO-SHARED-SECRET-change-me";
 
 // ========== Topics ==========
 const char* TOPIC_COMMAND   = "aegis/lockdown/cmd";
