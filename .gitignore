@@ -6,3 +6,8 @@
 __pycache__/
 *.pyc
 aegis_security_report.csv
+# Security & Config
+.env
+aegis_audit.db
+*.db
+__pycache__/

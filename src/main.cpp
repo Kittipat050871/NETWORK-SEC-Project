@@ -12,10 +12,10 @@
 #include <time.h>
 
 // ========== ตั้งค่า ==========
-const char* WIFI_SSID     = "Pboo_2.4G";
-const char* WIFI_PASSWORD = "0985932894";
+const char* WIFI_SSID     = "iPhone Music";
+const char* WIFI_PASSWORD = "Mew050871";
 
-const char* MQTT_BROKER = "192.168.2.174";
+const char* MQTT_BROKER = "172.20.10.2";
 const int   MQTT_PORT   = 1883;
 
 const char* HMAC_SECRET = "AEGIS-DEMO-SHARED-SECRET-change-me";
