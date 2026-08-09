@@ -1,13 +1,19 @@
-# ไม่เอาไฟล์แคชของ Python
+# ---- ความลับ (ห้าม commit เด็ดขาด) ----
+.env
+*.env
+
+# ---- ไฟล์ที่สร้างใหม่ได้ตอนรัน ----
+aegis_audit.db
+aegis_soc.log
+aegis_soc.log.*
+aegis_security_report.csv
+
+# ---- PlatformIO / build (ใหญ่มาก สร้างใหม่ได้) ----
+.pio/
+
+# ---- Python ----
 __pycache__/
 *.pyc
-.pytest_cache/
 
-# ไม่เอาไฟล์ฐานข้อมูล (ข้อมูลจริง)
-*.db
-aegis_audit.db
-
-# ไม่เอาไฟล์ Log หรือความลับ
-*.log
-aegis_soc.log
-.env
+# ---- VS Code (ไม่จำเป็นต้องแชร์) ----
+.vscode/
