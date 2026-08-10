@@ -29,7 +29,11 @@ _load_dotenv()      # ← บรรทัดนี้สำคัญสุด: �
 
 # ---- MQTT Broker ----
 BROKER_IP = os.getenv("AEGIS_BROKER_IP", "192.168.2.174")
-PORT = int(os.getenv("AEGIS_BROKER_PORT", "1883"))
+try:
+    PORT = int(os.getenv("AEGIS_BROKER_PORT", "1883"))
+except ValueError:
+    PORT = 1883
+    print("[config] AEGIS_BROKER_PORT ไม่ใช่ตัวเลข — ใช้ค่า default 1883")
 
 # ---- Secrets (ตั้งผ่าน environment variable) ----
 # ต้องตรงกับ HMAC_SECRET ใน src/main.cpp ของ ESP32 เสมอ
@@ -70,6 +74,19 @@ def validate_config():
         warnings.append("ใช้ HMAC secret ค่า default — ควรตั้ง AEGIS_HMAC_SECRET ให้ตรงกับ ESP32 ก่อนใช้งานจริง")
     if _ADMIN_PIN == "1234":
         warnings.append("ใช้ Admin PIN ค่า default (1234) — ควรตั้ง AEGIS_ADMIN_PIN ก่อนใช้งานจริง")
+
+    # ตรวจรูปแบบ broker IP
+    import ipaddress
+    try:
+        ipaddress.ip_address(BROKER_IP)
+    except ValueError:
+        if BROKER_IP not in ("localhost",):
+            warnings.append(f"AEGIS_BROKER_IP '{BROKER_IP}' ไม่ใช่ IP ที่ถูกต้อง")
+
+    # ตรวจ port อยู่ในช่วงที่ใช้ได้
+    if not (1 <= PORT <= 65535):
+        warnings.append(f"AEGIS_BROKER_PORT {PORT} อยู่นอกช่วง 1-65535")
+
     return warnings
 
 
