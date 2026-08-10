@@ -80,6 +80,10 @@ def log_event(event_type, details, level=INFO, incident_id=None):
     if event_type in _OPS_ALERT_EVENTS:
         comms.send_ops_alert(event_type, details)
 
+def log_to_file_only(message, level=INFO):
+    """เขียนลงไฟล์ log อย่างเดียว (ไม่แตะ DB) — ใช้กับข้อความที่ขึ้นจอทุกบรรทัด"""
+    _logger.log(_LEVEL_MAP.get(level, logging.INFO), message)
+
 
 # ---------------- Incident lifecycle ----------------
 def create_incident(attacker_ip=None):

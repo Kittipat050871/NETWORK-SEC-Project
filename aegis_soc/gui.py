@@ -325,6 +325,7 @@ class AegisAdminGUI:
         if self._passes_filter(level):
             self.log_box.insert(tk.END, f"{message}\n", level)
             self.log_box.see(tk.END)
+        db.log_to_file_only(message, level)      # ← เพิ่มบรรทัดนี้: บันทึกลงไฟล์ทุกครั้ง
 
     def _passes_filter(self, level):
         f = self.filter_var.get() if hasattr(self, "filter_var") else FILTER_ALL
@@ -654,6 +655,7 @@ class AegisAdminGUI:
 
 def main():
     db.init_db()
+    db.log_event("SYSTEM", "SOC เริ่มทำงาน", db.INFO)   # ← เพิ่ม
     root = tk.Tk()
     mqtt = MQTTManager()
     app = AegisAdminGUI(root, mqtt)
