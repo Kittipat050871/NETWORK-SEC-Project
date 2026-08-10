@@ -63,6 +63,8 @@ DEVICE_OFFLINE_SEC = 45           # ไม่ได้รับข้อคว�
 DB_PATH = os.getenv("AEGIS_DB_PATH", "aegis_audit.db")
 LOG_PATH = os.getenv("AEGIS_LOG_PATH", "aegis_soc.log")
 SOUND_PATH = os.getenv("AEGIS_SOUND_PATH", "Sound.wav")
+MQTT_USER = os.getenv("AEGIS_MQTT_USER", "")
+MQTT_PASS = os.getenv("AEGIS_MQTT_PASS", "")
 
 
 def validate_config():

@@ -239,7 +239,7 @@ void connectMQTT() {
 
   Serial.print("เชื่อมต่อ MQTT broker...");
   String clientId = "AEGIS-ESP32-" + String(random(0xffff), HEX);
-  if (mqtt.connect(clientId.c_str())) {
+  if (mqtt.connect(clientId.c_str(), SECRET_MQTT_USER, SECRET_MQTT_PASS)) {
     Serial.println(" สำเร็จ!");
     mqtt.subscribe(TOPIC_COMMAND);
     mqtt.subscribe(TOPIC_HEARTBEAT);

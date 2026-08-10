@@ -115,7 +115,10 @@ class MQTTManager:
     # ---------- lifecycle ----------
     def start(self):
         try:
-            self.client.connect_async(config.BROKER_IP, config.PORT, 10)
+            # ตั้ง user/password ถ้ามี (ต้องทำก่อน connect)
+            if config.MQTT_USER:
+                self.client.username_pw_set(config.MQTT_USER, config.MQTT_PASS)
+            self.client.connect_async(config.BROKER_IP, config.PORT, 60)
             self.client.loop_start()
         except Exception as e:
             print(f"[MQTT] start error: {e}")
