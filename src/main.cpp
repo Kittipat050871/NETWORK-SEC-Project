@@ -44,6 +44,9 @@ const unsigned long LED_BLINK_INTERVAL_MS = 300;
 unsigned long lastReconnectAttempt = 0;
 const unsigned long RECONNECT_INTERVAL_MS = 5000;
 
+unsigned long lastStatusPublishMs = 0;
+const unsigned long STATUS_PUBLISH_INTERVAL_MS = 30000;  // ส่ง status ทุก 30 วิ
+
 // ========== State ==========
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -301,5 +304,14 @@ void loop() {
   mqtt.loop();
   checkDeadman();
   updateLedBlink();
+
+  // ส่งสัญญาณชีพเป็นระยะ (บอก SOC ว่ายังออนไลน์)
+  if (millis() - lastStatusPublishMs > STATUS_PUBLISH_INTERVAL_MS) {
+    lastStatusPublishMs = millis();
+    if (mqtt.connected()) {
+      publishStatus(deadmanTriggered ? "LOCKDOWN" : "NORMAL", "heartbeat");
+    }
+  }
+  
   delay(10);
 }
