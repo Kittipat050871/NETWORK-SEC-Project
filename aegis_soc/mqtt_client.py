@@ -27,7 +27,7 @@ class MQTTManager:
         self.status_callback = None       # (state, rssi, heap)
         self.connection_callback = None   # (connected: bool)
         self.ack_callback = None          # (ack: str, detail: str)
-
+        self.attacker_callback = None   
         self.client.on_message = self._on_message
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
@@ -73,6 +73,8 @@ class MQTTManager:
                 if ip:
                     self.last_attacker_ip = ip
                     self._log(f"[{t}] [DETECTOR] พบ IP ต้องสงสัย: {ip}", db.WARN)
+                    if self.attacker_callback:              # ← เพิ่ม 2 บรรทัดนี้
+                        self.attacker_callback(ip)
 
             elif msg.topic == config.TOPIC_STATUS:
                 self._mark_device_seen()
@@ -94,6 +96,7 @@ class MQTTManager:
                     comms.send_webhook_alert(state, reason, rssi, heap, attacker_ip=attacker_ip)
                     if state == "LOCKDOWN":
                         self.last_attacker_ip = None
+                        
         except Exception as e:
             print(f"MQTT parse error: {e}")
 

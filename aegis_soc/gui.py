@@ -523,6 +523,16 @@ class AegisAdminGUI:
             return False
 
 
+    def on_attacker_detected(self, ip):
+        """ถูกเรียกเมื่อ detector ส่ง IP ผู้โจมตีมา → ตัดเน็ตอัตโนมัติ"""
+        if not self.armed:
+            self.log_message(f"[{time.strftime('%H:%M:%S')}] [AUTO] พบผู้โจมตี {ip} แต่ระบบ DISARMED — ไม่ตัด", db.WARN)
+            return
+        self.log_message(f"[{time.strftime('%H:%M:%S')}] [AUTO] 🚨 detector พบผู้โจมตี {ip} — ตัดเน็ตอัตโนมัติ", db.CRITICAL)
+        self.mqtt.last_attacker_ip = ip
+        self.send_command("CUT_UPLINK", f"ตัดอัตโนมัติจาก detector (ผู้โจมตี {ip})", critical=True)
+
+
 
 
 
@@ -679,6 +689,8 @@ def main():
     mqtt.status_callback = lambda s, r, h: root.after(0, app.on_status, s, r, h)
     mqtt.connection_callback = lambda ok: root.after(0, app.set_broker_state, ok)
     mqtt.ack_callback = lambda a, d: root.after(0, app.on_ack, a, d)
+    mqtt.ack_callback = lambda a, d: root.after(0, app.on_ack, a, d)
+    mqtt.attacker_callback = lambda ip: root.after(0, app.on_attacker_detected, ip)   # ← เพิ่มบรรทัดนี้
     mqtt.start()
 
     # เพิ่ม 3 บรรทัดนี้: เริ่มตัวฟังคำสั่ง Telegram

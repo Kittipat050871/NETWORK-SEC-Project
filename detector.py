@@ -36,7 +36,9 @@ client.loop_start()
 fail_times = defaultdict(lambda: deque())   # ip -> เวลาที่ล้มเหลว
 already_reported = set()                     # กัน publish ซ้ำ
 
-
+scan_ports = defaultdict(lambda: deque())   # ip -> deque ของ (เวลา, พอร์ต)
+SCAN_PORT_THRESHOLD = 10                     # แตะกี่พอร์ตต่างกัน
+SCAN_TIME_WINDOW = 10                        # ภายในกี่วินาที
 
 
 def _load_dotenv(path=".env"):
@@ -79,14 +81,37 @@ def process_line(line):
 
 import subprocess
 
+def process_portscan(line):
+    """จับ port scan จาก log iptables (AEGIS_NEWCONN)"""
+    if "AEGIS_NEWCONN" not in line:
+        return
+    m_ip = re.search(r"SRC=(\d+\.\d+\.\d+\.\d+)", line)
+    m_port = re.search(r"DPT=(\d+)", line)
+    if not m_ip or not m_port:
+        return
+    ip = m_ip.group(1)
+    port = m_port.group(1)
+    #if ip.startswith("127."):      # ข้าม localhost (กัน false alarm ตอนทดสอบ)
+     #   return
+    now = time.time()
+    dq = scan_ports[ip]
+    dq.append((now, port))
+    while dq and now - dq[0][0] > SCAN_TIME_WINDOW:
+        dq.popleft()
+    unique_ports = {p for _, p in dq}         # นับพอร์ตไม่ซ้ำ
+    print(f"[DETECTOR] Port scan? {ip} แตะ {len(unique_ports)} พอร์ต")
+    if len(unique_ports) >= SCAN_PORT_THRESHOLD:
+        report_attacker(ip)
+
 def tail_journal():
-    """อ่าน log จาก systemd journal แบบเรียลไทม์"""
+    """อ่าน journal ทั้งหมด แล้วแยกว่าเป็น SSH fail หรือ port scan"""
     proc = subprocess.Popen(
-        ["journalctl", "-f", "-n", "0", "-o", "cat", "_COMM=sshd-session"],
+        ["journalctl", "-f", "-n", "0", "-o", "cat"],
         stdout=subprocess.PIPE, text=True
     )
     for line in proc.stdout:
-        process_line(line)
+        process_line(line)        # จับ SSH brute-force (ของเดิม)
+        process_portscan(line)    # จับ port scan (ของใหม่)
 
 if __name__ == "__main__":
     print("[DETECTOR] เริ่มเฝ้า systemd journal (auth/sshd) ...")
