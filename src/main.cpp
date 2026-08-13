@@ -50,7 +50,7 @@ const unsigned long STATUS_PUBLISH_INTERVAL_MS = 30000;  // ส่ง status ท
 // ========== State ==========
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
-bool isLockedDown = false;
+bool isLockedDown = false;  
 unsigned long lastHeartbeatMs = 0;
 bool deadmanTriggered = false;
 String usedNonces[NONCE_HISTORY_SIZE];
@@ -107,7 +107,7 @@ void publishStatus(const String& state, const String& reason) {
 
 
 void setLockdown(bool lock, const String& reason) {
-  isLockedDown = lock;
+  isLockedDown = lock; 
   digitalWrite(RELAY_IN, lock ? RELAY_TRIGGER : RELAY_RELEASE);
   digitalWrite(LED_GREEN, lock ? LOW : HIGH);
   if (lock) {
@@ -309,7 +309,7 @@ void loop() {
   if (millis() - lastStatusPublishMs > STATUS_PUBLISH_INTERVAL_MS) {
     lastStatusPublishMs = millis();
     if (mqtt.connected()) {
-      publishStatus(deadmanTriggered ? "LOCKDOWN" : "NORMAL", "heartbeat");
+      publishStatus(isLockedDown ? "LOCKDOWN" : "NORMAL", "heartbeat");
     }
   }
   

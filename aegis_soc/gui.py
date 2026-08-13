@@ -293,15 +293,21 @@ class AegisAdminGUI:
             self.lbl_conn.config(text="🔴 broker หลุด · กำลังต่อใหม่…", fg=COLOR_DANGER_HL)
 
     def on_status(self, state, rssi, heap):
+        prev = getattr(self, "_last_uplink_state", None)   # สถานะครั้งก่อน
+        changed = (prev != state)                          # เปลี่ยนไหม
+        self._last_uplink_state = state
+
         if state == "LOCKDOWN":
             self.lbl_uplink.config(text="🔴  LOCKED DOWN", fg=COLOR_DANGER_HL)
             self.card_uplink.set_accent(COLOR_DANGER_HL)
-            self.trigger_alarm(config.SOUND_LOCKDOWN)      # ← เสียงตอนตัด
+            if changed:                                    # ← เล่นเสียงเฉพาะตอนเพิ่งเปลี่ยนเป็น LOCKDOWN
+                self.trigger_alarm(config.SOUND_LOCKDOWN)
             self.refresh_incident_banner()
         else:
             self.lbl_uplink.config(text="🟢  NORMAL", fg=COLOR_ACCENT)
             self.card_uplink.set_accent(COLOR_ACCENT)
-            self.trigger_alarm(config.SOUND_RESTORE)       # ← เสียงตอนคืน (เพิ่มใหม่)
+            if changed:                                    # ← เล่นเสียงเฉพาะตอนเพิ่งกลับเป็น NORMAL
+                self.trigger_alarm(config.SOUND_RESTORE)
         self.lbl_rssi.config(text=f"{rssi} dBm")
         self.lbl_heap.config(text=f"{heap} B")
 
