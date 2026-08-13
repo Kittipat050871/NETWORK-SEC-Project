@@ -45,7 +45,8 @@ def init_db():
             level TEXT DEFAULT 'INFO',
             event_type TEXT,
             details TEXT,
-            incident_id INTEGER
+            incident_id INTEGER,
+            hash TEXT
         )
     """)
     c.execute("""
@@ -61,24 +62,60 @@ def init_db():
     conn.commit()
     conn.close()
 
+import hashlib
+
+def _get_last_hash():
+    """ดึง hash ของแถวล่าสุด (ใช้เป็น 'แถวก่อนหน้า' ของแถวใหม่)"""
+    conn = _connect()
+    c = conn.cursor()
+    c.execute("SELECT hash FROM audit_logs ORDER BY id DESC LIMIT 1")
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row and row[0] else "GENESIS"   # แถวแรกสุดใช้ค่าเริ่มต้น "GENESIS"
+
+def _compute_hash(timestamp, level, event_type, details, prev_hash):
+    """คำนวณลายนิ้วมือของแถวนี้ = hash(ข้อมูลแถวนี้ + hash แถวก่อน)"""
+    data = f"{timestamp}|{level}|{event_type}|{details}|{prev_hash}"
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 def log_event(event_type, details, level=INFO, incident_id=None):
-    """บันทึกเหตุการณ์ลง SQLite + ไฟล์ log + (บางเหตุการณ์) แจ้ง Telegram"""
     t_str = time.strftime('%Y-%m-%d %H:%M:%S')
     try:
+        prev_hash = _get_last_hash()                                    # ← ดึง hash แถวก่อน
+        row_hash = _compute_hash(t_str, level, event_type, details, prev_hash)  # ← คำนวณ hash แถวนี้
         conn = _connect()
         c = conn.cursor()
-        c.execute("INSERT INTO audit_logs (timestamp, level, event_type, details, incident_id) "
-                  "VALUES (?, ?, ?, ?, ?)", (t_str, level, event_type, details, incident_id))
+        c.execute("INSERT INTO audit_logs (timestamp, level, event_type, details, incident_id, hash) "
+                  "VALUES (?, ?, ?, ?, ?, ?)", (t_str, level, event_type, details, incident_id, row_hash))
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"DB Error: {e}")
 
     _logger.log(_LEVEL_MAP.get(level, logging.INFO), f"[{event_type}] {details}")
-
     if event_type in _OPS_ALERT_EVENTS:
         comms.send_ops_alert(event_type, details)
+
+def verify_chain():
+    """ตรวจสอบความสมบูรณ์ของ hash chain ทั้งหมด
+    คืน (is_valid, message) — ถ้าถูกแก้จะบอกว่าแถวไหน"""
+    conn = _connect()
+    c = conn.cursor()
+    c.execute("SELECT id, timestamp, level, event_type, details, hash "
+              "FROM audit_logs ORDER BY id ASC")
+    rows = c.fetchall()
+    conn.close()
+
+    prev_hash = "GENESIS"
+    for row in rows:
+        rid, ts, level, etype, details, stored_hash = row
+        # คำนวณ hash ใหม่จากข้อมูลแถวนี้ + hash แถวก่อน
+        expected = _compute_hash(ts, level, etype, details, prev_hash)
+        if expected != stored_hash:
+            return (False, f"⚠️ พบการแก้ไขที่แถว id={rid} ({etype}) — hash ไม่ตรง")
+        prev_hash = stored_hash   # เลื่อนไปเป็นข้อต่อของแถวถัดไป
+
+    return (True, f"✅ ตรวจสอบ {len(rows)} รายการ — ลูกโซ่สมบูรณ์ ไม่มีการแก้ไข")
 
 def log_to_file_only(message, level=INFO):
     """เขียนลงไฟล์ log อย่างเดียว (ไม่แตะ DB) — ใช้กับข้อความที่ขึ้นจอทุกบรรทัด"""

@@ -232,11 +232,10 @@ class AegisAdminGUI:
             self.log_box.tag_config(lvl, foreground=col)
         self.log_box.insert(tk.END, "[SOC] ระบบพร้อมปฏิบัติการ...\n", "INFO")
 
-        self.btn_export = tk.Button(logsec.body, text="📥  ส่งออก Audit Log เป็นไฟล์ CSV", font=FONT_BTN_SM,
-                                    fg="white", bg=COLOR_BLUE, activebackground=COLOR_BLUE_HL,
-                                    command=self.export_audit_log, bd=0, cursor="hand2", height=1)
-        self.btn_export.grid(row=2, column=0, sticky="ew")
-
+        self.btn_verify = tk.Button(logsec.body, text="🔒  ตรวจสอบความสมบูรณ์ของ Log", font=FONT_BTN_SM,
+                                    fg="white", bg=COLOR_PURPLE, activebackground=COLOR_ACCENT,
+                                    command=self.verify_log_integrity, bd=0, cursor="hand2", height=1)
+        self.btn_verify.grid(row=3, column=0, sticky="ew", pady=(6, 0))
     def _build_footer(self):
         footer = tk.Frame(self.root, bg=COLOR_PANEL, highlightbackground=COLOR_BORDER, highlightthickness=1)
         footer.grid(row=2, column=0, columnspan=2, sticky="ew", padx=16, pady=(0, 16))
@@ -297,11 +296,12 @@ class AegisAdminGUI:
         if state == "LOCKDOWN":
             self.lbl_uplink.config(text="🔴  LOCKED DOWN", fg=COLOR_DANGER_HL)
             self.card_uplink.set_accent(COLOR_DANGER_HL)
-            self.trigger_alarm()
+            self.trigger_alarm(config.SOUND_LOCKDOWN)      # ← เสียงตอนตัด
             self.refresh_incident_banner()
         else:
             self.lbl_uplink.config(text="🟢  NORMAL", fg=COLOR_ACCENT)
             self.card_uplink.set_accent(COLOR_ACCENT)
+            self.trigger_alarm(config.SOUND_RESTORE)       # ← เสียงตอนคืน (เพิ่มใหม่)
         self.lbl_rssi.config(text=f"{rssi} dBm")
         self.lbl_heap.config(text=f"{heap} B")
 
@@ -599,17 +599,31 @@ class AegisAdminGUI:
         self.tg_pin_fails = 0
         return True
 
+
+
+    def verify_log_integrity(self):
+        """ตรวจสอบความสมบูรณ์ของ audit log (hash chain)"""
+        ok, msg = db.verify_chain()
+        level = db.INFO if ok else db.CRITICAL
+        self.log_message(f"[{time.strftime('%H:%M:%S')}] [VERIFY] {msg}", level)
+        from tkinter import messagebox
+        if ok:
+            messagebox.showinfo("Log Integrity", msg)
+        else:
+            messagebox.showerror("⚠️ ตรวจพบการแก้ไข", msg)
+
     # =========================================================
     # MISC
     # =========================================================
-    def trigger_alarm(self):
-        if not os.path.exists(config.SOUND_PATH):
+    def trigger_alarm(self, sound_file=None):
+        path = sound_file or config.SOUND_PATH
+        if not os.path.exists(path):
             return
 
         def _play():
             for player in ("paplay", "aplay"):
                 try:
-                    subprocess.run([player, config.SOUND_PATH], check=True,
+                    subprocess.run([player, path], check=True,
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     return
                 except (FileNotFoundError, subprocess.CalledProcessError):
