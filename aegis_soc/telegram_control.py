@@ -2,9 +2,9 @@
 AEGIS IDEA 3 — Telegram สั่งงานสองทาง (ขาเข้า)
 คอยฟังคำสั่งจาก Telegram แล้วสั่งระบบ — เริ่มจาก /status ก่อน (ปลอดภัย)
 """
-import time
-import threading
 import json
+import threading
+import time
 import urllib.request
 
 from . import config

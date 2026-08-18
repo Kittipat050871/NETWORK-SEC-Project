@@ -1,0 +1,11 @@
+# AEGIS IDEA 3 — ruff config
+# ข้ามกฎที่ขัดกับดีไซน์ตั้งใจของระบบ (ระบบต้องรันตลอด = ต้อง catch กว้างเพื่อไม่ให้ล้ม)
+line-length = 120
+
+[lint]
+ignore = [
+    "BLE001",   # catch Exception กว้างๆ — ตั้งใจ: กัน thread/callback ล้มทั้งระบบ
+    "RUF012",   # mutable class attribute — STEP_TITLES/DESC เป็น list คงที่ ไม่ถูกแก้
+    "S110",     # try/except/pass — ตั้งใจตอนปิด client
+    "EXE001",   # shebang แต่ไม่ executable — ไม่กระทบการรันด้วย python3
+]

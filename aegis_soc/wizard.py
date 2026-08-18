@@ -4,14 +4,26 @@ AEGIS IDEA 3 — Incident Recovery Wizard (เอกสารข้อ 5.4, Clos
 """
 import time
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import messagebox, simpledialog
 
-from . import config
+from . import config, security
 from . import database as db
-from . import security
-from .theme import (Card, COLOR_BG, COLOR_PANEL, COLOR_TEXT, COLOR_MUTED, COLOR_ACCENT,
-                    COLOR_WARN, COLOR_DANGER, COLOR_DANGER_HL, COLOR_SUCCESS, COLOR_SUCCESS_HL,
-                    COLOR_BLUE, COLOR_BLUE_HL, FONT_BTN_SM)
+from .theme import (
+    COLOR_ACCENT,
+    COLOR_BG,
+    COLOR_BLUE,
+    COLOR_BLUE_HL,
+    COLOR_DANGER,
+    COLOR_DANGER_HL,
+    COLOR_MUTED,
+    COLOR_PANEL,
+    COLOR_SUCCESS,
+    COLOR_SUCCESS_HL,
+    COLOR_TEXT,
+    COLOR_WARN,
+    FONT_BTN_SM,
+    Card,
+)
 
 
 class IncidentRecoveryWizard(tk.Toplevel):

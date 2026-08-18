@@ -4,13 +4,12 @@ AEGIS IDEA 3 — Database & structured logging
 - incidents: โมเดลเหตุการณ์ที่มีวงจรชีวิต (OPEN → CONTAINED → CLOSED)
 - เขียน log ลงไฟล์แบบหมุนเวียน (RotatingFileHandler) ควบคู่กับ SQLite
 """
+import logging
 import sqlite3
 import time
-import logging
 from logging.handlers import RotatingFileHandler
 
-from . import config
-from . import comms
+from . import comms, config
 
 # ---- ระดับความรุนแรง ----
 INFO = "INFO"
@@ -63,6 +62,7 @@ def init_db():
     conn.close()
 
 import hashlib
+
 
 def _get_last_hash():
     """ดึง hash ของแถวล่าสุด (ใช้เป็น 'แถวก่อนหน้า' ของแถวใหม่)"""

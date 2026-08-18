@@ -3,28 +3,48 @@ AEGIS IDEA 3 — SOC GUI (หน้าจอควบคุมหลัก)
 รวมฟีเจอร์: ARM/DISARM + ยืนยันคำสั่งซ้อน, ACK tracking, สถานะอุปกรณ์สด,
 Log แบ่งระดับความรุนแรง + กรอง, Incident banner
 """
-import time
-import threading
 import csv
+import ipaddress
 import os
 import subprocess
+import threading
+import time
 import tkinter as tk
-import ipaddress
-from tkinter import scrolledtext, simpledialog, messagebox
+from tkinter import messagebox, scrolledtext, simpledialog
 
-from . import config
+from . import comms, config, security
 from . import database as db
-from . import security
-from . import comms
 from .mqtt_client import MQTTManager
-from .wizard import IncidentRecoveryWizard
 from .theme import (
-    Card, Section, ScrollFrame, make_hint,
-    COLOR_BG, COLOR_PANEL, COLOR_PANEL_ALT, COLOR_BORDER, COLOR_TEXT, COLOR_MUTED,
-    COLOR_ACCENT, COLOR_DANGER, COLOR_DANGER_HL, COLOR_SUCCESS, COLOR_SUCCESS_HL,
-    COLOR_GOOD, COLOR_WARN, COLOR_WARN_HL, COLOR_PURPLE, COLOR_BLUE, COLOR_BLUE_HL, COLOR_GREY,
-    LEVEL_COLORS, FONT_TITLE, FONT_SUB, FONT_BTN, FONT_BTN_SM, FONT_HINT, FONT_MONO,
+    COLOR_ACCENT,
+    COLOR_BG,
+    COLOR_BLUE,
+    COLOR_BORDER,
+    COLOR_DANGER,
+    COLOR_DANGER_HL,
+    COLOR_GOOD,
+    COLOR_MUTED,
+    COLOR_PANEL,
+    COLOR_PANEL_ALT,
+    COLOR_PURPLE,
+    COLOR_SUCCESS,
+    COLOR_SUCCESS_HL,
+    COLOR_TEXT,
+    COLOR_WARN,
+    COLOR_WARN_HL,
+    FONT_BTN,
+    FONT_BTN_SM,
+    FONT_HINT,
+    FONT_MONO,
+    FONT_SUB,
+    FONT_TITLE,
+    LEVEL_COLORS,
+    Card,
+    ScrollFrame,
+    Section,
+    make_hint,
 )
+from .wizard import IncidentRecoveryWizard
 
 FILTER_ALL = "ทั้งหมด"
 FILTER_WARN = "WARN ขึ้นไป"

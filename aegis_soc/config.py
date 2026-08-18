@@ -2,8 +2,8 @@
 AEGIS IDEA 3 — Configuration
 รวมค่าตั้งทั้งหมดไว้ที่เดียว อ่านจาก environment variable ก่อน (กัน secret หลุดขึ้น GitHub)
 """
-import os
 import hashlib
+import os
 
 
 def _load_dotenv(path=".env"):

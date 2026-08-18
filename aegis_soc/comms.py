@@ -5,10 +5,10 @@ AEGIS IDEA 3 — Communications
 หมายเหตุ: โมดูลนี้ import แค่ config เท่านั้น เพื่อไม่ให้เกิด circular import
 """
 import json
-import time
-import threading
-import urllib.request
 import subprocess
+import threading
+import time
+import urllib.request
 
 from . import config
 
@@ -86,7 +86,8 @@ def send_ops_alert(event_type, details):
 def ufw_exec(args, timeout=30):
     """เรียก ufw ผ่าน pkexec — คืน (success: bool, output: str)"""
     try:
-        result = subprocess.run(["pkexec", "ufw"] + args, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(["pkexec", "ufw"] + args, capture_output=True,
+                                text=True, timeout=timeout, check=False)
         ok = (result.returncode == 0)
         out = ((result.stdout or "") + (result.stderr or "")).strip()
         return ok, out

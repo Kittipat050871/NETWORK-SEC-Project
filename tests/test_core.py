@@ -3,10 +3,10 @@ AEGIS IDEA 3 — ชุดทดสอบอัตโนมัติ (pytest)
 ทดสอบตรรกะความปลอดภัย + config โดยไม่ต้องใช้ฮาร์ดแวร์/network
 รัน:  pytest -v
 """
-import os
-import json
-import hmac
 import hashlib
+import hmac
+import json
+import os
 import tempfile
 
 # ใช้ DB/LOG ชั่วคราว + PIN/secret สำหรับเทสต์ (ตั้งก่อน import config)
@@ -24,7 +24,7 @@ from aegis_soc import database as db
 def _verify(payload_json):
     d = json.loads(payload_json)
     action = d.get("cmd") or d.get("hb")
-    signing = f"{action}|{d['nonce']}|{d['ts']}".encode("utf-8")
+    signing = f"{action}|{d['nonce']}|{d['ts']}".encode()
     expected = hmac.new(config.SECRET_KEY, signing, hashlib.sha256).hexdigest()
     return expected == d["sig"]
 

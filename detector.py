@@ -4,13 +4,11 @@ AEGIS IDEA 3 — Attack Detector
 รัน: sudo python3 detector.py   (ต้อง sudo เพราะอ่าน auth.log)
 """
 import os
-import time
 import re
-import json
-import hmac
-import hashlib
-import paho.mqtt.client as mqtt
+import time
 from collections import defaultdict, deque
+
+import paho.mqtt.client as mqtt
 
 # ===== ตั้งค่า =====
 BROKER = os.getenv("AEGIS_BROKER_IP", "127.0.0.1")
@@ -23,14 +21,19 @@ AUTH_LOG = "/var/log/auth.log"     # Arch อาจเป็น journalctl (ด�
 FAIL_THRESHOLD = 5                 # ล้มเหลวกี่ครั้ง
 TIME_WINDOW = 30                   # ภายในกี่วินาที
 
-# ===== เชื่อม MQTT =====
-try:
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)   # paho 2.x
-except AttributeError:
-    client = mqtt.Client()                                    # paho 1.x
-client.username_pw_set(MQTT_USER, MQTT_PASS)
-client.connect(BROKER, PORT, 60)
-client.loop_start()
+# ===== MQTT (ยังไม่เชื่อม — เชื่อมตอนรันจริงใน main) =====
+client = None
+
+def connect_mqtt():
+    """สร้าง + เชื่อม MQTT client (เรียกเฉพาะตอนรันจริง)"""
+    global client
+    try:
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    except AttributeError:
+        client = mqtt.Client()
+    client.username_pw_set(MQTT_USER, MQTT_PASS)
+    client.connect(BROKER, PORT, 60)
+    client.loop_start()
 
 # ===== ตัวนับแบบ sliding window =====
 fail_times = defaultdict(lambda: deque())   # ip -> เวลาที่ล้มเหลว
@@ -54,13 +57,14 @@ def _load_dotenv(path=".env"):
             if key and key not in os.environ:
                 os.environ[key] = value
 
-_load_dotenv()
+
 
 def report_attacker(ip):
     if ip in already_reported:
         return
     already_reported.add(ip)
-    client.publish(TOPIC_ATTACKER, ip)
+    if client is not None:              # ← เพิ่มเงื่อนไขนี้
+        client.publish(TOPIC_ATTACKER, ip)
     print(f"[DETECTOR] 🚨 พบการโจมตีจาก {ip} → publish เข้า {TOPIC_ATTACKER}")
 
 def process_line(line):
@@ -80,6 +84,7 @@ def process_line(line):
         report_attacker(ip)
 
 import subprocess
+
 
 def process_portscan(line):
     """จับ port scan จาก log iptables (AEGIS_NEWCONN)"""
@@ -114,5 +119,7 @@ def tail_journal():
         process_portscan(line)    # จับ port scan (ของใหม่)
 
 if __name__ == "__main__":
+    _load_dotenv()          # ← เพิ่ม
+    connect_mqtt()          # ← เพิ่ม
     print("[DETECTOR] เริ่มเฝ้า systemd journal (auth/sshd) ...")
     tail_journal()
