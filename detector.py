@@ -44,19 +44,42 @@ SCAN_PORT_THRESHOLD = 10                     # แตะกี่พอร์ต
 SCAN_TIME_WINDOW = 10                        # ภายในกี่วินาที
 
 
+import os
+import time
+import re
+import subprocess
+from collections import defaultdict, deque
+
+import paho.mqtt.client as mqtt
+
+
 def _load_dotenv(path=".env"):
     if not os.path.exists(path):
         return
+
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
+
             if not line or line.startswith("#") or "=" not in line:
                 continue
+
             key, _, value = line.partition("=")
-            key, value = key.strip(), value.strip().strip('"').strip("'")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+
             if key and key not in os.environ:
                 os.environ[key] = value
 
+
+_load_dotenv()
+
+BROKER = os.getenv("AEGIS_BROKER_IP", "127.0.0.1")
+PORT = int(os.getenv("AEGIS_BROKER_PORT", "1883"))
+MQTT_USER = os.getenv("AEGIS_MQTT_USER", "aegis")
+MQTT_PASS = os.getenv("AEGIS_MQTT_PASS", "")
+
+TOPIC_ATTACKER = "aegis/attacker_ip"
 
 
 def report_attacker(ip):

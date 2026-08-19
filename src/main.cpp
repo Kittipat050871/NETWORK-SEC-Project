@@ -201,13 +201,18 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   Serial.println("[ผ่าน] ลายเซ็น HMAC ถูกต้อง + ภายในเวลา 30s + Nonce ใหม่");
 
   if (t == TOPIC_HEARTBEAT) {
-    lastHeartbeatMs = millis();
-    if (deadmanTriggered) { 
-      deadmanTriggered = false; 
-      setLockdown(false, "Heartbeat ยืนยันตัวตนสำเร็จ กลับมาแล้ว"); 
-    }
-    Serial.println("[HEARTBEAT] อัปเดตตัวจับเวลาเรียบร้อย");
-  } 
+  lastHeartbeatMs = millis();
+
+  if (deadmanTriggered) {
+    deadmanTriggered = false;
+    Serial.println(
+      "[HEARTBEAT] สัญญาณกลับมาแล้ว แต่ระบบยังคง LOCKDOWN "
+      "จนกว่าจะได้รับ RESTORE_UPLINK ที่ถูกต้อง"
+    );
+  }
+
+  Serial.println("[HEARTBEAT] อัปเดตตัวจับเวลาเรียบร้อย");
+}
   else if (t == TOPIC_COMMAND) {
     if (cmd == "CUT_UPLINK") { setLockdown(true, "verified"); sendAck("OK","uplink cut"); }
     else if (cmd == "RESTORE_UPLINK") { setLockdown(false, "verified"); sendAck("OK","uplink restored"); }
