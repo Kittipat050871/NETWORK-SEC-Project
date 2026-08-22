@@ -1,8 +1,9 @@
-import time
-import json
-import hmac
 import hashlib
+import hmac
+import json
+import time
 import uuid
+
 import paho.mqtt.client as mqtt
 
 MQTT_BROKER = "192.168.2.174"
@@ -19,7 +20,7 @@ def create_secure_payload(action_type: str, action_value: str) -> str:
     เพื่อให้ ESP32 ตรวจสอบผ่านและตัดวงจรจริง แทนการปลอม status ตรงๆ แบบเดิม"""
     nonce = str(uuid.uuid4())[:8]
     ts = int(time.time())
-    payload_string = f"{action_value}|{nonce}|{ts}".encode('utf-8')
+    payload_string = f"{action_value}|{nonce}|{ts}".encode()
     signature = hmac.new(SECRET_KEY, payload_string, hashlib.sha256).hexdigest()
     return json.dumps({action_type: action_value, "nonce": nonce, "ts": ts, "sig": signature})
 
