@@ -35,6 +35,7 @@ const int RELAY_TRIGGER = LOW;
 
 // ========== Security ==========
 const unsigned long DEADMAN_TIMEOUT_MS = 60000;
+const unsigned long BOOT_GRACE_MS = 90000;  // รอ heartbeat แรก 90 วิ ก่อน fail-secure
 const int NONCE_HISTORY_SIZE = 20;
 const int MAX_COMMAND_AGE_SEC = 30;
 
@@ -261,7 +262,15 @@ void connectMQTT() {
 }
 
 void checkDeadman() {
-  if (lastHeartbeatMs == 0) return;
+  if (lastHeartbeatMs == 0) {
+    // ยังไม่เคยได้รับ heartbeat หลัง boot
+    if (millis() > BOOT_GRACE_MS && !isLockedDown) {
+      deadmanTriggered = true;
+      setLockdown(true, "SECURE BOOT - ไม่พบ Heartbeat ภายใน 90 วิ!");
+    }
+    return;
+  }
+
   if (millis() - lastHeartbeatMs > DEADMAN_TIMEOUT_MS && !deadmanTriggered) {
     deadmanTriggered = true;
     setLockdown(true, "DEAD MAN'S SWITCH - ขาดสัญญาณ Heartbeat 60 วิ!");
