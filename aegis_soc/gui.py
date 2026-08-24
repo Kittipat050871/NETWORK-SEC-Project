@@ -550,17 +550,34 @@ class AegisAdminGUI:
 
 
     def on_attacker_detected(self, ip):
-        """ถูกเรียกเมื่อ detector ส่ง IP ผู้โจมตีมา → ตัดเน็ตอัตโนมัติ"""
-        if not self.armed:
-            self.log_message(f"[{time.strftime('%H:%M:%S')}] [AUTO] พบผู้โจมตี {ip} แต่ระบบ DISARMED — ไม่ตัด", db.WARN)
-            return
-        self.log_message(f"[{time.strftime('%H:%M:%S')}] [AUTO] 🚨 detector พบผู้โจมตี {ip} — ตัดเน็ตอัตโนมัติ", db.CRITICAL)
-        self.mqtt.last_attacker_ip = ip
-        self.send_command("CUT_UPLINK", f"ตัดอัตโนมัติจาก detector (ผู้โจมตี {ip})", critical=True)
+     """ถูกเรียกเมื่อ detector ส่ง IP ผู้โจมตีมา → ตัดเน็ตอัตโนมัติ"""
+     if not self.armed:
+        self.log_message(
+            f"[{time.strftime('%H:%M:%S')}] [AUTO] พบผู้โจมตี {ip} "
+            "แต่ระบบ DISARMED — ไม่ตัด",
+            db.WARN,
+        )
+        return
 
+     self.log_message(
+        f"[{time.strftime('%H:%M:%S')}] [AUTO] 🚨 detector "
+        f"พบผู้โจมตี {ip} — ตัดเน็ตอัตโนมัติ",
+        db.CRITICAL,
+    )
 
+     self.mqtt.last_attacker_ip = ip
 
+     t2_ms = time.time_ns() // 1_000_000
+     self.log_message(
+        f"[LATENCY] T2 CUT issued for {ip} at {t2_ms} ms",
+        db.CRITICAL,
+    )
 
+     self.send_command(
+        "CUT_UPLINK",
+        f"ตัดอัตโนมัติจาก detector (ผู้โจมตี {ip})",
+        critical=True,
+    )
 
     def handle_telegram_command(self, text):
         """สมองของ Telegram สองทาง: รับข้อความ → แยกคำสั่ง → ทำ
