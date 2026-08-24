@@ -10,6 +10,7 @@ def setup_function():
     detector.fail_times.clear()
     detector.already_reported.clear()
     detector.scan_ports.clear()
+    detector.syn_times.clear()
 
 
 def test_ssh_bruteforce_triggers_after_threshold(monkeypatch):
@@ -55,3 +56,44 @@ def test_portscan_triggers_after_threshold(monkeypatch):
         detector.process_portscan(line)
 
     assert "203.0.113.9" in reported
+
+def test_synflood_below_threshold_no_alert(monkeypatch):
+    """SYN ต่ำกว่า threshold ภายใน window → ยังไม่แจ้งภัย"""
+    reported = []
+
+    monkeypatch.setattr(
+        detector,
+        "report_attacker",
+        lambda ip: reported.append(ip),
+    )
+
+    line = (
+        "AEGIS_NEWCONN SRC=203.0.113.10 "
+        "DST=192.0.2.10 PROTO=TCP DPT=22"
+    )
+
+    for _ in range(detector.SYN_FLOOD_THRESHOLD - 1):
+        detector.process_synflood(line)
+
+    assert reported == []
+
+
+def test_synflood_triggers_at_threshold(monkeypatch):
+    """SYN ถึง threshold จาก IP เดียวภายใน window → ต้องแจ้งภัย"""
+    reported = []
+
+    monkeypatch.setattr(
+        detector,
+        "report_attacker",
+        lambda ip: reported.append(ip),
+    )
+
+    line = (
+        "AEGIS_NEWCONN SRC=203.0.113.11 "
+        "DST=192.0.2.10 PROTO=TCP DPT=22"
+    )
+
+    for _ in range(detector.SYN_FLOOD_THRESHOLD):
+        detector.process_synflood(line)
+
+    assert "203.0.113.11" in reported

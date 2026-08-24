@@ -5,18 +5,11 @@ AEGIS IDEA 3 — Attack Detector
 """
 import os
 import re
+import subprocess
 import time
 from collections import defaultdict, deque
 
 import paho.mqtt.client as mqtt
-
-# ===== ตั้งค่า =====
-BROKER = os.getenv("AEGIS_BROKER_IP", "127.0.0.1")
-PORT = int(os.getenv("AEGIS_BROKER_PORT", "1883"))
-MQTT_USER = os.getenv("AEGIS_MQTT_USER", "aegis")
-MQTT_PASS = os.getenv("AEGIS_MQTT_PASS", "")     # ← ไม่มีค่า default ที่เป็นรหัสจริง                # ให้ตรงกับที่ตั้งใน broker
-TOPIC_ATTACKER = "aegis/attacker_ip"
-AUTH_LOG = "/var/log/auth.log"     # Arch อาจเป็น journalctl (ดูหมายเหตุด้านล่าง)
 
 FAIL_THRESHOLD = 5                 # ล้มเหลวกี่ครั้ง
 TIME_WINDOW = 30                   # ภายในกี่วินาที
@@ -43,14 +36,9 @@ scan_ports = defaultdict(lambda: deque())   # ip -> deque ของ (เวล�
 SCAN_PORT_THRESHOLD = 10                     # แตะกี่พอร์ตต่างกัน
 SCAN_TIME_WINDOW = 10                        # ภายในกี่วินาที
 
-
-import os
-import time
-import re
-import subprocess
-from collections import defaultdict, deque
-
-import paho.mqtt.client as mqtt
+syn_times = defaultdict(lambda: deque())     # ip -> เวลา TCP SYN ใหม่
+SYN_FLOOD_THRESHOLD = 20                    # Lab threshold
+SYN_FLOOD_WINDOW = 2                        # วินาที
 
 
 def _load_dotenv(path=".env"):
@@ -106,8 +94,6 @@ def process_line(line):
     if len(dq) >= FAIL_THRESHOLD:
         report_attacker(ip)
 
-import subprocess
-
 
 def process_portscan(line):
     """จับ port scan จาก log iptables (AEGIS_NEWCONN)"""
@@ -131,18 +117,52 @@ def process_portscan(line):
     if len(unique_ports) >= SCAN_PORT_THRESHOLD:
         report_attacker(ip)
 
+
+def process_synflood(line):
+    """Detect a high rate of new TCP SYN events from one source IP."""
+    if "AEGIS_NEWCONN" not in line:
+        return
+
+    m_ip = re.search(r"SRC=(\d+\.\d+\.\d+\.\d+)", line)
+    if not m_ip:
+        return
+
+    ip = m_ip.group(1)
+
+    if ip.startswith("127."):
+        return
+
+    now = time.time()
+    dq = syn_times[ip]
+    dq.append(now)
+
+    while dq and now - dq[0] > SYN_FLOOD_WINDOW:
+        dq.popleft()
+
+    print(
+        f"[DETECTOR] SYN rate {ip}: "
+        f"{len(dq)}/{SYN_FLOOD_THRESHOLD} "
+        f"within {SYN_FLOOD_WINDOW}s"
+    )
+
+    if len(dq) >= SYN_FLOOD_THRESHOLD:
+        report_attacker(ip)
+
+
 def tail_journal():
-    """อ่าน journal ทั้งหมด แล้วแยกว่าเป็น SSH fail หรือ port scan"""
+    """อ่าน journal แล้วส่ง log เข้า detector แต่ละประเภท"""
     proc = subprocess.Popen(
         ["journalctl", "-f", "-n", "0", "-o", "cat"],
-        stdout=subprocess.PIPE, text=True
+        stdout=subprocess.PIPE,
+        text=True,
     )
+
     for line in proc.stdout:
-        process_line(line)        # จับ SSH brute-force (ของเดิม)
-        process_portscan(line)    # จับ port scan (ของใหม่)
+        process_line(line)
+        process_portscan(line)
+        process_synflood(line)  # SYN flood / DoS
 
 if __name__ == "__main__":
-    _load_dotenv()          # ← เพิ่ม
-    connect_mqtt()          # ← เพิ่ม
+    connect_mqtt()
     print("[DETECTOR] เริ่มเฝ้า systemd journal (auth/sshd) ...")
     tail_journal()
