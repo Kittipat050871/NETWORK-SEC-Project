@@ -73,9 +73,14 @@ TOPIC_ATTACKER = "aegis/attacker_ip"
 def report_attacker(ip):
     if ip in already_reported:
         return
+
     already_reported.add(ip)
-    if client is not None:              # ← เพิ่มเงื่อนไขนี้
+
+    if client is not None:
+        t0_ms = time.time_ns() // 1_000_000
         client.publish(TOPIC_ATTACKER, ip)
+        print(f"[LATENCY] T0 publish {ip} at {t0_ms} ms")
+
     print(f"[DETECTOR] 🚨 พบการโจมตีจาก {ip} → publish เข้า {TOPIC_ATTACKER}")
 
 def process_line(line):
