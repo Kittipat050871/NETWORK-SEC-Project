@@ -6,6 +6,7 @@ AEGIS IDEA 3 — Database & structured logging
 """
 import logging
 import sqlite3
+import threading
 import time
 from logging.handlers import RotatingFileHandler
 
@@ -28,6 +29,8 @@ if not _logger.handlers:
     _logger.addHandler(_h)
 
 _LEVEL_MAP = {INFO: logging.INFO, WARN: logging.WARNING, CRITICAL: logging.CRITICAL}
+
+_AUDIT_WRITE_LOCK = threading.Lock()
 
 
 def _connect():
@@ -64,14 +67,12 @@ def init_db():
 import hashlib
 
 
-def _get_last_hash():
-    """ดึง hash ของแถวล่าสุด (ใช้เป็น 'แถวก่อนหน้า' ของแถวใหม่)"""
-    conn = _connect()
+def _get_last_hash(conn):
+    """ดึง hash ของแถวล่าสุดจาก connection/transaction เดียวกับ writer"""
     c = conn.cursor()
     c.execute("SELECT hash FROM audit_logs ORDER BY id DESC LIMIT 1")
     row = c.fetchone()
-    conn.close()
-    return row[0] if row and row[0] else "GENESIS"   # แถวแรกสุดใช้ค่าเริ่มต้น "GENESIS"
+    return row[0] if row and row[0] else "GENESIS"
 
 def _compute_hash(timestamp, level, event_type, details, prev_hash):
     """คำนวณลายนิ้วมือของแถวนี้ = hash(ข้อมูลแถวนี้ + hash แถวก่อน)"""
@@ -79,20 +80,55 @@ def _compute_hash(timestamp, level, event_type, details, prev_hash):
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 def log_event(event_type, details, level=INFO, incident_id=None):
-    t_str = time.strftime('%Y-%m-%d %H:%M:%S')
+    t_str = time.strftime("%Y-%m-%d %H:%M:%S")
+
     try:
-        prev_hash = _get_last_hash()                                    # ← ดึง hash แถวก่อน
-        row_hash = _compute_hash(t_str, level, event_type, details, prev_hash)  # ← คำนวณ hash แถวนี้
-        conn = _connect()
-        c = conn.cursor()
-        c.execute("INSERT INTO audit_logs (timestamp, level, event_type, details, incident_id, hash) "
-                  "VALUES (?, ?, ?, ?, ?, ?)", (t_str, level, event_type, details, incident_id, row_hash))
-        conn.commit()
-        conn.close()
+        with _AUDIT_WRITE_LOCK:
+            conn = _connect()
+
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+
+                prev_hash = _get_last_hash(conn)
+                row_hash = _compute_hash(
+                    t_str,
+                    level,
+                    event_type,
+                    details,
+                    prev_hash,
+                )
+
+                conn.execute(
+                    "INSERT INTO audit_logs "
+                    "(timestamp, level, event_type, details, incident_id, hash) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        t_str,
+                        level,
+                        event_type,
+                        details,
+                        incident_id,
+                        row_hash,
+                    ),
+                )
+
+                conn.commit()
+
+            except Exception:
+                conn.rollback()
+                raise
+
+            finally:
+                conn.close()
+
     except Exception as e:
         print(f"DB Error: {e}")
 
-    _logger.log(_LEVEL_MAP.get(level, logging.INFO), f"[{event_type}] {details}")
+    _logger.log(
+        _LEVEL_MAP.get(level, logging.INFO),
+        f"[{event_type}] {details}",
+    )
+
     if event_type in _OPS_ALERT_EVENTS:
         comms.send_ops_alert(event_type, details)
 
