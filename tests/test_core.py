@@ -8,6 +8,8 @@ import hmac
 import json
 import os
 import tempfile
+import threading
+import time
 
 # ใช้ DB/LOG ชั่วคราว + PIN/secret สำหรับเทสต์ (ตั้งก่อน import config)
 _TMP = tempfile.mkdtemp()
@@ -75,3 +77,55 @@ def test_invalid_ip_produces_warning():
     warnings = config.validate_config()
     config.BROKER_IP = original                  # คืนค่าเดิม (test isolation)
     assert any("IP" in w for w in warnings)
+
+
+# ---------------- Audit hash-chain concurrency ----------------
+def test_concurrent_audit_logging_preserves_hash_chain(tmp_path, monkeypatch):
+    test_db = tmp_path / "concurrent-audit.db"
+    monkeypatch.setattr(config, "DB_PATH", str(test_db))
+
+    db.init_db()
+
+    original_compute_hash = db._compute_hash
+
+    def slow_compute_hash(timestamp, level, event_type, details, prev_hash):
+        time.sleep(0.01)
+        return original_compute_hash(
+            timestamp,
+            level,
+            event_type,
+            details,
+            prev_hash,
+        )
+
+    monkeypatch.setattr(db, "_compute_hash", slow_compute_hash)
+
+    worker_count = 8
+    start_barrier = threading.Barrier(worker_count)
+
+    def worker(worker_id):
+        start_barrier.wait()
+        db.log_event(
+            "CONCURRENCY_TEST",
+            f"parallel worker {worker_id}",
+            db.INFO,
+        )
+
+    threads = [
+        threading.Thread(target=worker, args=(i,))
+        for i in range(worker_count)
+    ]
+
+    for thread in threads:
+        thread.start()
+
+    for thread in threads:
+        thread.join(timeout=5)
+
+    assert all(not thread.is_alive() for thread in threads)
+
+    rows = db.fetch_all_logs()
+    assert len(rows) == worker_count
+
+    valid, message = db.verify_chain()
+    assert valid is True, message
