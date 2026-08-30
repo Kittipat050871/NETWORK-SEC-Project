@@ -41,6 +41,21 @@ SYN_FLOOD_THRESHOLD = 20                    # Lab threshold
 SYN_FLOOD_WINDOW = 2                        # วินาที
 
 
+# ===== Auto-reset สถานะทุก N วินาที (เพื่อทดสอบซ้ำสะดวก) =====
+import threading
+
+AUTO_RESET_SEC = 60   # ล้างสถานะทุก 60 วิ
+
+def _auto_reset_loop():
+    """ล้างตัวนับ + already_reported เป็นระยะ เพื่อให้ยิงทดสอบซ้ำได้โดยไม่ต้องรีสตาร์ท"""
+    while True:
+        time.sleep(AUTO_RESET_SEC)
+        fail_times.clear()
+        scan_ports.clear()
+        syn_times.clear()
+        already_reported.clear()
+        print(f"[DETECTOR] 🔄 auto-reset สถานะแล้ว (พร้อมทดสอบรอบใหม่)")
+
 def _load_dotenv(path=".env"):
     if not os.path.exists(path):
         return
@@ -169,5 +184,7 @@ def tail_journal():
 
 if __name__ == "__main__":
     connect_mqtt()
-    print("[DETECTOR] เริ่มเฝ้า systemd journal (auth/sshd) ...")
+    # สตาร์ท auto-reset thread (daemon = ปิดตามโปรแกรมหลัก)
+    threading.Thread(target=_auto_reset_loop, daemon=True).start()
+    print(f"[DETECTOR] เริ่มเฝ้า systemd journal (auth/sshd) ... (auto-reset ทุก {AUTO_RESET_SEC}s)")
     tail_journal()
